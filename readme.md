@@ -1,5 +1,5 @@
 # Canvas submission downloader
-#python script that downloads all of your canvas submissions
+### python script that downloads all of your canvas submissions and lectures
 Note that if you have no submissions for a class it will not create a directory for it
 
 ## Setup
