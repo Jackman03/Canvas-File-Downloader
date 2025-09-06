@@ -103,13 +103,33 @@ def getclasses(folderid) -> list:
     for userclass in classjson:
         #Some classes dont have a name field, so we will skip those
         name = userclass.get('name')
-        #if userclass['access_restricted_by_date']
         if name is not None:
+            print(f'class start {userclass['start_at']}')
+            #new way to get semester. Acoring to API docs you need account id which I do not have so we are using a workaround with start_at
+            #This is how my University didi it
+            #when month < 4 then spring semester
+            #when month between 5 and 7 then summer semestwer
+            #when month >= 8 then fall semester
+            semdate = datetime.strptime(userclass['start_at'],'%Y-%m-%dT%H:%M:%SZ')
+            year = str(semdate.year)
+            month = semdate.month
+            calenderterm = ''
+            if month < 4:
+                calenderterm = 'Spring'
+            elif month >=5 and month <= 7:
+                calenderterm = 'Summer'
+            elif month >= 8:
+                calenderterm = 'Fall'
+            else:
+                calenderterm = 'Other'
+            semester = year +'-'+ calenderterm
+
             classlist.append(
             EnrolledClass(
                 userclass['id'],                            #class id
                 userclass['course_code'],                          #class name
-                userclass['enrollment_term_id'],           #class semester
+                #userclass['enrollment_term_id'],           #class semester OLD
+                semester,                                   #class semester NEW
                 userclass['created_at'],                   #when the class was created at
                 #we need to add the folder url if it is in there
                 getfolderurl(submissionJSON,userclass['course_code'])
@@ -155,13 +175,13 @@ def downloaddata(classlist):
 
 
             try:
-                os.mkdir(f'sem{c.GetSemester()}')
+                os.mkdir(f'{c.GetSemester()}')
                 print(f'Succeeded to create semester directory - {c.GetSemester()}')
             except :
                 print(f'Failed to create semester directory - {c.GetSemester()}')
 
         #once the files are creeated we create the class folder in the semester directory
-        classpath = f'sem{c.GetSemester()}/{c.GetClass()}'
+        classpath = f'{c.GetSemester()}/{c.GetClass()}'
 
         if os.path.exists(classpath):
                 print(f'{c.GetClass()} already exists. Overwriting.')
@@ -202,7 +222,7 @@ def downloadlectures(classparams,classitem):
         return
     for file in filedata:
         response = requests.get(url = f'{file['url']}',params=classparams)
-        lecturepath=f'sem{classitem.GetSemester()}/{classitem.GetClass()}/lectures/{file['filename']}'
+        lecturepath=f'{classitem.GetSemester()}/{classitem.GetClass()}/lectures/{file['filename']}'
      
         if response.status_code == 200:
             try:
@@ -246,7 +266,7 @@ def downloadassignments(classparams,classitem):
                 #response = requests.get(url = f'{assignment['url']}?access_token={token}')
                 response = requests.get(url = f'{assignment['url']}')
 
-                assignmentpath = f'sem{classitem.GetSemester()}/{classitem.GetClass()}/assignments/{assignment['filename']}'
+                assignmentpath = f'{classitem.GetSemester()}/{classitem.GetClass()}/assignments/{assignment['filename']}'
                 #Assignment downloader
                 if response.status_code == 200:
                     try:
